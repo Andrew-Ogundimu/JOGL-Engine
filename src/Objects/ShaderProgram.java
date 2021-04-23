@@ -1,14 +1,17 @@
+package Objects;
+
+import Objects.MainWindow;
+import Objects.Shader;
 import com.jogamp.opengl.GL3;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class ShaderProgram {
     public int id;
-    ArrayList<Integer> Shaders;
+    ArrayList<Integer> shaders;
     public ShaderProgram() {
         this.id = MainWindow.OpenGL.glCreateProgram();
-        Shaders = new ArrayList<>();
+        shaders = new ArrayList<>();
     }
     public int addShader(Shader s) {
         int shaderId = MainWindow.OpenGL.glCreateShader(s.getType());
@@ -29,13 +32,13 @@ public class ShaderProgram {
             return -1;
         }
         MainWindow.OpenGL.glAttachShader(id,shaderId);
-        Shaders.add(shaderId);
+        shaders.add(shaderId);
         return shaderId;
     }
     public void linkAndValidate() {
         MainWindow.OpenGL.glLinkProgram(id);
         MainWindow.OpenGL.glValidateProgram(id);
-        for (Integer shader: Shaders) {
+        for (Integer shader: shaders) {
             MainWindow.OpenGL.glDeleteShader(shader);
         }
     }

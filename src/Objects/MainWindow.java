@@ -1,3 +1,5 @@
+package Objects;
+
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
@@ -14,7 +16,13 @@ public class MainWindow implements GLEventListener {
     FPSAnimator fps;
     int[] buffer;
     int[] ibo;
-    int[] array;
+    int[] vao;
+    float r;
+    boolean up;
+    VertexArray va;
+    BufferLayout layout;
+    VertexBuffer vb;
+    IndexBuffer ib;
     int[] indices;
     float[] positions;
     ShaderProgram prog;
@@ -26,7 +34,7 @@ public class MainWindow implements GLEventListener {
         canvas = new GLCanvas(cap);
         canvas.addGLEventListener(this);
         JFrame window = new JFrame("Test");
-        window.setSize(1280,720);
+        window.setSize(640,360);
         window.add(canvas);
         window.setVisible(true);
         window.setDefaultCloseOperation(window.EXIT_ON_CLOSE);
@@ -49,26 +57,33 @@ public class MainWindow implements GLEventListener {
                 2, 3, 0
         };
         //System.out.println(Arrays.toString(array));
-        buffer = new int[1];
-        OpenGL.glGenBuffers(1,buffer,0);
-        OpenGL.glBindBuffer(GL3.GL_ARRAY_BUFFER,buffer[0]);
-        OpenGL.glBufferData(GL3.GL_ARRAY_BUFFER,Float.BYTES*positions.length,FloatBuffer.wrap(positions),GL3.GL_STATIC_DRAW);
+        //create vertex buffer object (vbo)
 
-        OpenGL.glVertexAttribPointer(0,2,GL3.GL_FLOAT,false,Float.BYTES*2,0);
-        OpenGL.glEnableVertexAttribArray(0);
+        va = new VertexArray();
+        vb = new VertexBuffer(positions);
 
-        ibo = new int[1];
-        OpenGL.glGenBuffers(1,ibo,0);
-        OpenGL.glBindBuffer(GL3.GL_ELEMENT_ARRAY_BUFFER,ibo[0]);
-        OpenGL.glBufferData(GL3.GL_ELEMENT_ARRAY_BUFFER,Integer.BYTES*indices.length, IntBuffer.wrap(indices),GL3.GL_STATIC_DRAW);
+        layout = new BufferLayout();
+        layout.push(GL3.GL_FLOAT,2);
+        va.addBuffer(vb,layout);
+
+        //create index buffer object (ibo)
+        ib = new IndexBuffer(indices);
         //OpenGL.glBindBuffer(GL3.GL_ARRAY_BUFFER,0);
+        va.unbind();
+        //create program
         prog = new ShaderProgram();
+        //add shaders to program
         prog.addShader(new Shader("./src/Shaders/testvert.glsl",GL3.GL_VERTEX_SHADER));
         prog.addShader(new Shader("./src/Shaders/testfrag.glsl",GL3.GL_FRAGMENT_SHADER));
+        //link, validate, and use program
         prog.linkAndValidate();
         prog.use();
+        //get uniform in vertex shader
         int location = OpenGL.glGetUniformLocation(prog.id,"u_Color");
+        //set uniform to float array
         OpenGL.glUniform4fv(location,1,new float[]{0.2f,0.3f,0.8f,1.0f},0);
+        r = 0.0f;
+        up = false;
     }
 
     @Override
@@ -79,14 +94,26 @@ public class MainWindow implements GLEventListener {
     @Override
     public void display(GLAutoDrawable glAutoDrawable) {
         OpenGL.glClear(GL3.GL_COLOR_BUFFER_BIT);
-        //OpenGL.glBindVertexArray(array[0]);
+        va.bind();
         int location = OpenGL.glGetUniformLocation(prog.id,"u_Color");
+        if (up==true) {
+            r+=0.1f;
+        } else {
+            r-=0.1f;
+        }
+        if (r>1) {
+            up = false;
+            r-=0.1f;
+        } else if (r < 0) {
+            up = true;
+            r+=0.1f;
+        }
+        OpenGL.glUniform4fv(location,1,new float[]{r,0.3f,0.8f,1.0f},0);
         OpenGL.glDrawElements(GL3.GL_TRIANGLES,6,GL3.GL_UNSIGNED_INT,0);
-        //OpenGL.glBindVertexArray(0);
+        va.unbind();
     }
 
     @Override
-    public void reshape(GLAutoDrawable glAutoDrawable, int i, int i1, int i2, int i3) {
-
+    public void reshape(GLAutoDrawable glAutoDrawable, int x, int y, int width, int height) {
     }
 }
