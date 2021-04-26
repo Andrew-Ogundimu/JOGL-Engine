@@ -3,14 +3,11 @@ package Objects;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
 
 import javax.swing.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.util.Arrays;
-import java.util.Random;
 
 public class MainWindow implements GLEventListener {
     FPSAnimator fps;
@@ -24,7 +21,11 @@ public class MainWindow implements GLEventListener {
     BufferLayout layout;
     VertexBuffer vb;
     IndexBuffer ib;
+    Matrix4f proj;
+    Vector4f vp;
+    Vector4f result;
     int[] indices;
+    int[] dims;
     float[] positions;
     ShaderProgram prog;
     GLCanvas canvas;
@@ -35,7 +36,8 @@ public class MainWindow implements GLEventListener {
         canvas = new GLCanvas(cap);
         canvas.addGLEventListener(this);
         JFrame window = new JFrame("Test");
-        window.setSize(640,640);
+        window.setSize(960,540);
+        dims = new int[]{960,540};
         window.add(canvas);
         window.setVisible(true);
         window.setDefaultCloseOperation(window.EXIT_ON_CLOSE);
@@ -48,10 +50,10 @@ public class MainWindow implements GLEventListener {
         System.out.println(OpenGL.glGetString(GL3.GL_VERSION));
 
         positions = new float[]{
-                -0.5f, -0.5f,0.0f,1.0f,
-                0.5f, -0.5f, 1.0f, 1.0f,
-                0.5f, 0.5f, 1.0f,0.0f,
-                -0.5f,0.5f,0.0f,0.0f};
+                100.0f, 100.0f,0.0f,1.0f,
+                200.0f, 100.0f,1.0f,1.0f,
+                200.0f, 200.0f,1.0f,0.0f,
+                100.0f, 200.0f,0.0f,0.0f};
 
         indices = new int[]{
                 0, 1, 2,
@@ -70,6 +72,11 @@ public class MainWindow implements GLEventListener {
 
         //create index buffer object (ibo)
         ib = new IndexBuffer(indices);
+        proj = new Matrix4f().ortho(0.0f,(float)dims[0],0.0f,(float)dims[1],-1.0f,1.0f);
+        float[] projArr = new float[16];
+        proj.get(projArr);
+        vp = new Vector4f(100.0f,100.0f,0.0f,1.0f);
+        result = vp.mul(proj);
         //OpenGL.glBindBuffer(GL3.GL_ARRAY_BUFFER,0);
         va.unbind();
         //create program
@@ -84,7 +91,8 @@ public class MainWindow implements GLEventListener {
         int location = OpenGL.glGetUniformLocation(prog.id,"u_Color");
         //set uniform to float array
         OpenGL.glUniform4fv(location,1,new float[]{0.2f,0.3f,0.8f,1.0f},0);
-        Texture texture = new Texture("./src/Textures/alpha.png");
+        OpenGL.glUniformMatrix4fv(OpenGL.glGetUniformLocation(prog.id,"u_MVP"),1,false,projArr,0);
+        Texture texture = new Texture("./src/Textures/dabab.png");
         OpenGL.glUniform1i(OpenGL.glGetUniformLocation(prog.id,"u_Texture"),0);
         texture.bind();
         r = 0.0f;
@@ -98,10 +106,15 @@ public class MainWindow implements GLEventListener {
 
     @Override
     public void display(GLAutoDrawable glAutoDrawable) {
+        proj = new Matrix4f().ortho(0.0f,(float)dims[0],0.0f,(float)dims[1],-1.0f,1.0f);
+        float[] projArr = new float[16];
+        proj.get(projArr);
+        OpenGL.glUniformMatrix4fv(OpenGL.glGetUniformLocation(prog.id,"u_MVP"),1,false,projArr,0);
+
         OpenGL.glClear(GL3.GL_COLOR_BUFFER_BIT);
         va.bind();
         int location = OpenGL.glGetUniformLocation(prog.id,"u_Color");
-        if (up==true) {
+        /*if (up==true) {
             r+=0.1f;
         } else {
             r-=0.1f;
@@ -113,12 +126,13 @@ public class MainWindow implements GLEventListener {
             up = true;
             r+=0.1f;
         }
-        OpenGL.glUniform4fv(location,1,new float[]{r,0.3f,0.8f,1.0f},0);
+        OpenGL.glUniform4fv(location,1,new float[]{r,0.3f,0.8f,1.0f},0);*/
         OpenGL.glDrawElements(GL3.GL_TRIANGLES,6,GL3.GL_UNSIGNED_INT,0);
         va.unbind();
     }
 
     @Override
     public void reshape(GLAutoDrawable glAutoDrawable, int x, int y, int width, int height) {
+        dims = new int[]{width,height};
     }
 }
